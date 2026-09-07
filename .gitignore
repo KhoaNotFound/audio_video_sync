@@ -1,0 +1,43 @@
+# Python virtual environment
+.venv/
+venv/
+env/
+ENV/
+
+# Python cache & bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Heavy media files and local data
+data/
+*.mp4
+*.mov
+*.mkv
+*.mxf
+*.avi
+*.webm
+
+# Temporary work & cache directories
+.work/
+scratch/
+temp/
+
+# Local run logs and test outputs
+*.log
+*out.txt
+*err.txt
+shot*.txt
+shot*.json
+dirs.txt
+output.txt
+cwd_info.txt
+
+# Local generator scripts
+write_app.py
+
+# System files
+.DS_Store
+Thumbs.db

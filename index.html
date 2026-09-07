@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Audio Sync Tool</title>
+<meta name="description" content="Đồng bộ audio với video tự động — tải về ngay khi xong"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d1117;--surface:#161b22;--surface2:#1c2230;
+  --border:#30363d;--accent:#2f81f7;--accent2:#58a6ff;
+  --text:#e6edf3;--muted:#8b949e;
+  --success:#3fb950;--warn:#d29922;--error:#f85149;
+  --r:12px;
+}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px}
+.card{width:100%;max-width:680px;background:var(--surface);border:1px solid var(--border);
+  border-radius:16px;padding:40px 36px;box-shadow:0 8px 32px rgba(0,0,0,.45)}
+h1{font-size:22px;font-weight:700;text-align:center;margin-bottom:4px;letter-spacing:-.3px}
+.subtitle{text-align:center;color:var(--muted);font-size:13px;margin-bottom:32px}
+
+/* upload grid */
+.upload-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.drop-zone{border:2px dashed var(--border);border-radius:var(--r);padding:28px 16px;
+  text-align:center;cursor:pointer;transition:border-color .2s,background .2s;
+  position:relative;user-select:none}
+.drop-zone:hover,.drop-zone.over{border-color:var(--accent2);background:rgba(88,166,255,.05)}
+.drop-zone.has-file{border-color:var(--success);background:rgba(63,185,80,.05)}
+.drop-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
+.drop-icon{font-size:32px;margin-bottom:10px;display:block}
+.drop-label{font-size:13px;font-weight:600;margin-bottom:4px}
+.drop-hint{font-size:12px;color:var(--muted)}
+.drop-filename{margin-top:10px;font-size:12px;color:var(--success);font-weight:500;
+  word-break:break-all;display:none}
+.drop-filesize{font-size:11px;color:var(--muted);margin-top:2px;display:none}
+.drop-zone.has-file .drop-filename,.drop-zone.has-file .drop-filesize{display:block}
+.drop-zone.has-file .drop-hint{display:none}
+
+/* format row */
+.format-row{display:flex;align-items:center;gap:12px;margin-bottom:20px;
+  padding:14px 16px;background:var(--surface2);border:1px solid var(--border);
+  border-radius:var(--r)}
+.format-row label{font-size:13px;font-weight:500;white-space:nowrap}
+.format-row select{
+  flex:1;background:var(--bg);color:var(--text);border:1px solid var(--border);
+  border-radius:8px;padding:7px 12px;font-size:13px;font-family:inherit;cursor:pointer;
+  outline:none;transition:border-color .2s}
+.format-row select:focus{border-color:var(--accent)}
+.format-badge{font-size:11px;color:var(--muted);white-space:nowrap}
+
+/* button */
+#syncBtn{width:100%;padding:14px;border:none;border-radius:var(--r);
+  background:var(--accent);color:#fff;font-size:15px;font-weight:600;
+  cursor:pointer;transition:background .2s,opacity .2s,transform .1s;letter-spacing:.2px}
+#syncBtn:hover:not(:disabled){background:var(--accent2)}
+#syncBtn:active:not(:disabled){transform:scale(.98)}
+#syncBtn:disabled{opacity:.42;cursor:not-allowed}
+
+/* panels */
+#status{margin-top:22px;display:flex;flex-direction:column;gap:11px}
+.panel{border-radius:var(--r);padding:15px 18px;font-size:13px;line-height:1.6;
+  display:none;animation:fadeIn .22s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+.panel.show{display:block}
+.panel-loading{background:rgba(47,129,247,.07);border:1px solid rgba(47,129,247,.25);
+  color:var(--accent2);display:flex;align-items:center;gap:10px}
+.spinner{width:18px;height:18px;flex-shrink:0;border:2px solid rgba(88,166,255,.25);
+  border-top-color:var(--accent2);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.panel-warn{background:rgba(210,153,34,.07);border:1px solid rgba(210,153,34,.3);color:#e3b341}
+.panel-success{background:rgba(63,185,80,.07);border:1px solid rgba(63,185,80,.3);color:var(--success)}
+.panel-noisy{background:rgba(248,81,73,.07);border:1px solid rgba(248,81,73,.3);color:var(--error)}
+.panel-noisy strong{display:block;font-size:14px;margin-bottom:6px}
+.panel-noisy p{color:#c9d1d9;font-size:13px}
+.panel-error{background:rgba(248,81,73,.07);border:1px solid rgba(248,81,73,.3);color:var(--error)}
+.meta-row{margin-top:10px;display:flex;gap:10px;flex-wrap:wrap}
+.chip{font-size:12px;color:var(--muted);background:rgba(255,255,255,.04);
+  padding:3px 10px;border-radius:20px;border:1px solid var(--border)}
+.chip span{color:var(--text);font-weight:500}
+.dl-btn{display:inline-flex;align-items:center;gap:8px;margin-top:13px;
+  padding:10px 22px;background:var(--success);color:#0d1117;border-radius:8px;
+  font-weight:700;font-size:13px;text-decoration:none;transition:opacity .2s}
+.dl-btn:hover{opacity:.85}
+footer{margin-top:18px;font-size:12px;color:var(--muted);text-align:center}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>🎙 Audio Sync Tool</h1>
+  <p class="subtitle">Upload 1 video + 1 audio — nhận về file audio đã đồng bộ</p>
+
+  <div class="upload-grid">
+    <div class="drop-zone" id="dropVideo">
+      <input type="file" id="videoInput"
+        accept="video/*,.mp4,.mov,.mkv,.mxf,.avi,.webm,.ts,.m2ts,.flv"/>
+      <span class="drop-icon">🎬</span>
+      <div class="drop-label">Video</div>
+      <div class="drop-hint">Kéo thả hoặc click<br/><small style="color:#555">mp4 · mov · mkv · mxf · avi · webm</small></div>
+      <div class="drop-filename" id="videoName"></div>
+      <div class="drop-filesize" id="videoSize"></div>
+    </div>
+    <div class="drop-zone" id="dropAudio">
+      <input type="file" id="audioInput"
+        accept="audio/*,.m4a,.mp3,.wav,.flac,.aac,.ogg,.opus"/>
+      <span class="drop-icon">🎤</span>
+      <div class="drop-label">Audio</div>
+      <div class="drop-hint">Kéo thả hoặc click<br/><small style="color:#555">m4a · mp3 · wav · flac · aac · opus</small></div>
+      <div class="drop-filename" id="audioName"></div>
+      <div class="drop-filesize" id="audioSize"></div>
+    </div>
+  </div>
+
+  <!-- Output format -->
+  <div class="format-row">
+    <label for="fmtSelect">📦 Xuất ra định dạng:</label>
+    <select id="fmtSelect">
+      <option value="m4a">M4A / AAC — nén tốt, chất lượng cao (khuyên dùng)</option>
+      <option value="mp3">MP3 — tương thích rộng rãi</option>
+      <option value="wav">WAV — không nén, chất lượng gốc</option>
+      <option value="flac">FLAC — lossless, dung lượng lớn</option>
+      <option value="opus">Opus — nén tốt nhất, dung lượng nhỏ</option>
+      <option value="aac">AAC (raw) — dành cho editor</option>
+    </select>
+    <span class="format-badge" id="fmtBadge"></span>
+  </div>
+
+  <button id="syncBtn" disabled>Chọn đủ 2 file để bắt đầu</button>
+
+  <div id="status">
+    <div class="panel panel-loading" id="panelLoading">
+      <div class="spinner"></div>
+      <span id="loadingMsg">Đang xử lý…</span>
+    </div>
+    <div class="panel panel-warn" id="panelSilence">
+      ⚠️ <strong style="display:inline">Silence đã được chèn tự động</strong>
+      <p id="silenceMsg" style="margin-top:4px;color:#c9d1d9;font-size:12px"></p>
+    </div>
+    <div class="panel panel-warn" id="panelLowConf">
+      ⚠️ Kết quả có độ tin cậy thấp — khuyến nghị nghe kiểm tra lại trước khi dùng.
+    </div>
+    <div class="panel panel-success" id="panelSuccess">
+      ✅ Đồng bộ thành công!
+      <div class="meta-row" id="metaRow"></div>
+      <a id="dlLink" class="dl-btn" href="#">⬇ Tải về audio đã sync</a>
+    </div>
+    <div class="panel panel-noisy" id="panelNoisy">
+      <strong>❌ Không thể đồng bộ — âm thanh quá nhiễu</strong>
+      <p>Thuật toán không tìm được điểm khớp đủ tin cậy.<br/>
+         Vui lòng <strong>thu âm lại</strong> trong môi trường ít nhiễu hơn và thử lại.</p>
+    </div>
+    <div class="panel panel-error" id="panelError">
+      <strong>❌ Lỗi xử lý</strong>
+      <div id="errMsg" style="margin-top:6px;font-size:12px;color:#c9d1d9"></div>
+    </div>
+  </div>
+</div>
+<footer>
+  <div>Audio Sync Tool — Onset Peak-Voting algorithm</div>
+  <div style="margin-top:6px;font-size:11px;color:var(--muted)">
+    <span id="backendStatus">Backend: Đang kết nối...</span> • 
+    <a href="#" id="changeBackendBtn" style="color:var(--accent2);text-decoration:none">⚙️ Đổi Backend Render URL</a>
+  </div>
+</footer>
+
+<script>
+// Cấu hình URL Backend:
+// 1. Mặc định nếu chạy local hoặc cùng domain (Render): dùng path tương đối ''
+// 2. Nếu deploy Frontend trên Vercel: lấy URL Render từ localStorage hoặc hằng số bên dưới
+const RENDER_BACKEND_URL = ''; // Có thể điền trước link Render, VD: 'https://audio-sync-api.onrender.com'
+
+function getApiBase() {
+  const isSameHost = window.location.hostname === 'localhost' || 
+                     window.location.hostname === '127.0.0.1' || 
+                     window.location.hostname.includes('onrender.com');
+  if (isSameHost) return '';
+  return (localStorage.getItem('SYNC_BACKEND_URL') || RENDER_BACKEND_URL || '').replace(/\/+$/, '');
+}
+
+let API = getApiBase();
+
+function updateBackendStatusUI() {
+  const cur = getApiBase();
+  const el = document.getElementById('backendStatus');
+  if (!el) return;
+  if (!cur) {
+    el.textContent = 'Backend: Same Origin (Local / Render)';
+  } else {
+    el.textContent = 'Backend: ' + cur.replace(/^https?:\/\//, '');
+  }
+}
+updateBackendStatusUI();
+
+document.getElementById('changeBackendBtn')?.addEventListener('click', (e) => {
+  e.preventDefault();
+  const cur = localStorage.getItem('SYNC_BACKEND_URL') || RENDER_BACKEND_URL || '';
+  const input = prompt('Nhập địa chỉ Render Backend URL (VD: https://audio-sync-api.onrender.com):', cur);
+  if (input !== null) {
+    const trimmed = input.trim().replace(/\/+$/, '');
+    localStorage.setItem('SYNC_BACKEND_URL', trimmed);
+    API = getApiBase();
+    updateBackendStatusUI();
+    alert('Đã cập nhật Backend URL: ' + (API || 'Same Origin'));
+  }
+});
+
+const videoInput = document.getElementById('videoInput');
+const audioInput = document.getElementById('audioInput');
+const dropVideo  = document.getElementById('dropVideo');
+const dropAudio  = document.getElementById('dropAudio');
+const fmtSelect  = document.getElementById('fmtSelect');
+const fmtBadge   = document.getElementById('fmtBadge');
+const syncBtn    = document.getElementById('syncBtn');
+
+let videoFile = null, audioFile = null;
+let autoFmt = 'm4a';   // detected from audio input
+
+const FMT_INFO = {
+  m4a:  {label:'AAC 256k', ext:'m4a'},
+  mp3:  {label:'MP3 320k', ext:'mp3'},
+  wav:  {label:'PCM 16-bit', ext:'wav'},
+  flac: {label:'FLAC lossless', ext:'flac'},
+  opus: {label:'Opus 128k', ext:'opus'},
+  aac:  {label:'AAC raw', ext:'aac'},
+};
+
+function fmtSize(bytes) {
+  if (bytes < 1024*1024) return (bytes/1024).toFixed(0)+' KB';
+  return (bytes/(1024*1024)).toFixed(1)+' MB';
+}
+
+function detectFmt(filename) {
+  const ext = filename.split('.').pop().toLowerCase();
+  return FMT_INFO[ext] ? ext : 'm4a';
+}
+
+function updateFmtBadge() {
+  const v = fmtSelect.value;
+  fmtBadge.textContent = FMT_INFO[v] ? FMT_INFO[v].label : '';
+}
+fmtSelect.addEventListener('change', updateFmtBadge);
+updateFmtBadge();
+
+function setVideo(f) {
+  videoFile = f;
+  document.getElementById('videoName').textContent = f.name;
+  document.getElementById('videoSize').textContent = fmtSize(f.size);
+  dropVideo.classList.add('has-file');
+  updateBtn();
+}
+function setAudio(f) {
+  audioFile = f;
+  document.getElementById('audioName').textContent = f.name;
+  document.getElementById('audioSize').textContent = fmtSize(f.size);
+  dropAudio.classList.add('has-file');
+  // Auto-set format to match uploaded audio
+  autoFmt = detectFmt(f.name);
+  fmtSelect.value = autoFmt;
+  updateFmtBadge();
+  updateBtn();
+}
+function updateBtn() {
+  if (videoFile && audioFile) {
+    syncBtn.disabled = false;
+    syncBtn.textContent = 'Đồng bộ Audio';
+  } else {
+    syncBtn.disabled = true;
+    syncBtn.textContent = 'Chọn đủ 2 file để bắt đầu';
+  }
+}
+
+videoInput.addEventListener('change', e => { if(e.target.files[0]) setVideo(e.target.files[0]); });
+audioInput.addEventListener('change', e => { if(e.target.files[0]) setAudio(e.target.files[0]); });
+
+function setupDrop(zone, handler) {
+  zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('over'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault(); zone.classList.remove('over');
+    const f = e.dataTransfer.files[0]; if(f) handler(f);
+  });
+}
+setupDrop(dropVideo, setVideo);
+setupDrop(dropAudio, setAudio);
+
+function hideAll() {
+  ['panelLoading','panelSilence','panelLowConf','panelSuccess','panelNoisy','panelError']
+    .forEach(id => document.getElementById(id).classList.remove('show'));
+}
+function show(id) { document.getElementById(id).classList.add('show'); }
+
+syncBtn.addEventListener('click', async () => {
+  if(!videoFile || !audioFile) return;
+  hideAll();
+  syncBtn.disabled = true;
+  syncBtn.textContent = 'Đang xử lý…';
+
+  const msgs = ['Đang tải file lên…','Đang phân tích âm thanh…',
+                 'Tính offset (Peak-Voting)…','Đang xuất file…'];
+  let si = 0;
+  show('panelLoading');
+  const tick = setInterval(() => {
+    si = (si+1) % msgs.length;
+    document.getElementById('loadingMsg').textContent = msgs[si];
+  }, 2200);
+
+  try {
+    const form = new FormData();
+    form.append('video', videoFile);
+    form.append('audio', audioFile);
+    form.append('output_format', fmtSelect.value);
+
+    const res  = await fetch(`${API}/api/sync`, {method:'POST', body:form});
+    const data = await res.json();
+    clearInterval(tick); hideAll();
+
+    if(data.status === 'too_noisy') {
+      show('panelNoisy');
+    } else if(data.status === 'error') {
+      document.getElementById('errMsg').textContent = data.message || 'Lỗi không xác định.';
+      show('panelError');
+    } else {
+      if(data.silence_added) {
+        document.getElementById('silenceMsg').textContent =
+          `Audio ngắn hơn video ${data.silence_sec}s — đã tự động chèn silence ở cuối để đủ độ dài.`;
+        show('panelSilence');
+      }
+      if(data.low_confidence) show('panelLowConf');
+
+      const fmt = (data.output_format||'').toUpperCase();
+      document.getElementById('metaRow').innerHTML = [
+        ['Offset', (data.offset_sec>0?'+':'')+data.offset_sec+'s'],
+        ['Corr', data.correlation],
+        ['Votes', data.votes],
+        ['Format', fmt],
+        ['Video', data.video_dur+'s'],
+      ].map(([k,v]) => `<div class="chip">${k}: <span>${v}</span></div>`).join('');
+
+      const url = API + data.download_url;
+      const lnk = document.getElementById('dlLink');
+      lnk.href = url; lnk.download = data.filename;
+      show('panelSuccess');
+
+      // Auto-download
+      setTimeout(() => {
+        const a = document.createElement('a');
+        a.href = url; a.download = data.filename;
+        document.body.appendChild(a); a.click();
+        document.body.removeChild(a);
+      }, 300);
+    }
+  } catch(err) {
+    clearInterval(tick); hideAll();
+    document.getElementById('errMsg').textContent = 'Không kết nối được server: '+err.message;
+    show('panelError');
+  }
+  syncBtn.disabled = false;
+  syncBtn.textContent = '🔄 Sync lại';
+});
+</script>
+</body>
+</html>
