@@ -176,7 +176,10 @@ footer{margin-top:18px;font-size:12px;color:var(--muted);text-align:center}
   <div id="status">
     <div class="panel panel-loading" id="panelLoading">
       <div class="spinner"></div>
-      <span id="loadingMsg">Đang xử lý…</span>
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <span id="loadingMsg" style="font-weight:600">Đang bắt đầu…</span>
+        <span id="loadingSubMsg" style="font-size:11px;opacity:.8">Vui lòng giữ trình duyệt mở</span>
+      </div>
     </div>
     <div class="panel panel-warn" id="panelSilence">
       ⚠️ <strong style="display:inline">Silence đã được chèn tự động</strong>
@@ -368,14 +371,30 @@ syncBtn.addEventListener('click', async () => {
   syncBtn.disabled = true;
   syncBtn.textContent = 'Đang xử lý…';
 
-  const msgs = ['Đang tải file lên…','Đang phân tích âm thanh…',
-                 'Tính offset (Peak-Voting)…','Đang xuất file…'];
-  let si = 0;
+  let elapsedSec = 0;
   show('panelLoading');
+  document.getElementById('loadingMsg').textContent = 'Đang tải file lên server… (0s)';
+  document.getElementById('loadingSubMsg').textContent = 'Đang truyền video & audio sang Render Backend';
+
   const tick = setInterval(() => {
-    si = (si+1) % msgs.length;
-    document.getElementById('loadingMsg').textContent = msgs[si];
-  }, 2200);
+    elapsedSec++;
+    let msg = 'Đang tải file lên server…';
+    let sub = 'Đang truyền video & audio sang Render Backend';
+
+    if (elapsedSec > 6 && elapsedSec <= 15) {
+      msg = 'Đang phân tích âm thanh & phổ FFT…';
+      sub = 'Trích xuất dải tần và tính toán Spectral Flux';
+    } else if (elapsedSec > 15 && elapsedSec <= 28) {
+      msg = 'Tính toán Onset Peak-Voting…';
+      sub = 'Đối sánh các đỉnh năng lượng âm thanh để tìm offset';
+    } else if (elapsedSec > 28) {
+      msg = 'Đang căn chỉnh & xuất audio…';
+      sub = 'Nếu Render đang thức giấc (Cold Start), có thể mất khoảng 40-50s';
+    }
+
+    document.getElementById('loadingMsg').textContent = `${msg} (${elapsedSec}s)`;
+    document.getElementById('loadingSubMsg').textContent = sub;
+  }, 1000);
 
   try {
     const form = new FormData();
