@@ -2,7 +2,7 @@
 Audio-Video Sync — FastAPI Backend v3
 Deploy : Render (backend)  |  Local: python run_server.py
 """
-import os, re, shutil, subprocess, tempfile, uuid
+import os, re, shutil, subprocess, tempfile, uuid, urllib.parse, unicodedata
 from pathlib import Path
 from typing import List, Optional
 
@@ -163,8 +163,10 @@ async def sync_audio(
     d   = TEMP_DIR / sid
     d.mkdir(parents=True, exist_ok=True)
 
-    vp  = d / (video.filename or "video.mp4")
-    ap  = d / (audio.filename or "audio.m4a")
+    safe_video_name = Path(video.filename or "video.mp4").name
+    safe_audio_name = Path(audio.filename or "audio.m4a").name
+    vp  = d / safe_video_name
+    ap  = d / safe_audio_name
     logs: List[str] = []
 
     try:
@@ -246,7 +248,7 @@ async def sync_audio(
             "silence_sec":    silence_sec,
             "low_confidence": corr < WARN_CORR or votes < WARN_VOTES,
             "logs":           logs,
-            "download_url":   f"/api/download/{sid}/{out.name}",
+            "download_url":   f"/api/download/{sid}/{urllib.parse.quote(out.name)}",
         })
 
     except Exception as e:
@@ -256,12 +258,34 @@ async def sync_audio(
 
 @app.get("/api/download/{sid}/{filename}")
 async def download(sid: str, filename: str):
-    p = TEMP_DIR / sid / filename
+    s_dir = TEMP_DIR / sid
+    if not s_dir.exists():
+        raise HTTPException(404, "Session not found.")
+
+    p = s_dir / filename
     if not p.exists():
-        raise HTTPException(404, "File not found.")
-    _, mime, _ = OUTPUT_FORMATS.get(Path(filename).suffix.lstrip("."), ("", "application/octet-stream", ""))
-    return FileResponse(path=p, media_type=mime, filename=filename,
-                        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{filename}"})
+        norm_target = unicodedata.normalize("NFC", filename)
+        for f in s_dir.iterdir():
+            if unicodedata.normalize("NFC", f.name) == norm_target:
+                p = f
+                break
+        else:
+            candidates = [f for f in s_dir.iterdir() if f.is_file() and f.name.startswith("synced_")]
+            if candidates:
+                p = candidates[0]
+            else:
+                raise HTTPException(404, "File not found.")
+
+    real_filename = p.name
+    _, mime, _ = OUTPUT_FORMATS.get(p.suffix.lstrip(".").lower(), ("", "application/octet-stream", ""))
+    
+    # RFC 5987 UTF-8 header encoding (must be ASCII safe for latin-1 HTTP headers)
+    quoted_name = urllib.parse.quote(real_filename)
+    return FileResponse(
+        path=p,
+        media_type=mime,
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quoted_name}"}
+    )
 
 
 @app.get("/", response_class=HTMLResponse)
