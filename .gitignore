@@ -41,3 +41,10 @@ write_app.py
 # System files
 .DS_Store
 Thumbs.db
+
+# PyInstaller build artifacts
+dist/
+build/
+*.spec
+main_exe.py
+

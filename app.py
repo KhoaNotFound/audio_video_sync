@@ -2,7 +2,7 @@
 Audio-Video Sync — FastAPI Backend v3
 Deploy : Render (backend)  |  Local: python run_server.py
 """
-import os, re, shutil, subprocess, tempfile, uuid, urllib.parse, unicodedata
+import os, re, shutil, subprocess, tempfile, uuid, urllib.parse, unicodedata, sys
 from pathlib import Path
 from typing import List, Optional
 
@@ -14,7 +14,23 @@ from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 
-_FFMPEG  = imageio_ffmpeg.get_ffmpeg_exe()
+def get_resource_path(relative_name: str) -> Path:
+    if hasattr(sys, "_MEIPASS"):
+        return Path(sys._MEIPASS) / relative_name
+    return Path(__file__).parent / relative_name
+
+def get_ffmpeg_binary() -> str:
+    try:
+        return imageio_ffmpeg.get_ffmpeg_exe()
+    except Exception:
+        if hasattr(sys, "_MEIPASS"):
+            for p in Path(sys._MEIPASS).glob("**/ffmpeg*.exe"):
+                return str(p)
+        for p in Path(__file__).parent.glob("**/ffmpeg*.exe"):
+            return str(p)
+        return "ffmpeg"
+
+_FFMPEG  = get_ffmpeg_binary()
 TEMP_DIR = Path(tempfile.gettempdir()) / "av_sync_web"
 TEMP_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -290,8 +306,10 @@ async def download(sid: str, filename: str):
 
 @app.get("/", response_class=HTMLResponse)
 async def ui():
-    html = (Path(__file__).parent / "index.html").read_text(encoding="utf-8")
-    return HTMLResponse(html)
+    idx = get_resource_path("index.html")
+    if not idx.exists():
+        idx = Path("index.html")
+    return HTMLResponse(idx.read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":
