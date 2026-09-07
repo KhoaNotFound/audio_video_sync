@@ -15,11 +15,50 @@
   --text:#e6edf3;--muted:#8b949e;
   --success:#3fb950;--warn:#d29922;--error:#f85149;
   --r:12px;
+  --card-shadow:0 8px 32px rgba(0,0,0,.45);
+  --chip-bg:rgba(255,255,255,.04);
+  --dl-color:#0d1117;
+  --panel-noisy-text:#c9d1d9;
+  --panel-loading-bg:rgba(47,129,247,.07);
+  --panel-loading-border:rgba(47,129,247,.25);
+  --panel-warn-bg:rgba(210,153,34,.07);
+  --panel-warn-border:rgba(210,153,34,.3);
+  --panel-success-bg:rgba(63,185,80,.07);
+  --panel-success-border:rgba(63,185,80,.3);
+  --panel-error-bg:rgba(248,81,73,.07);
+  --panel-error-border:rgba(248,81,73,.3);
 }
+
+[data-theme="light"]{
+  --bg:#f6f8fa;--surface:#ffffff;--surface2:#f0f3f6;
+  --border:#d0d7de;--accent:#0969da;--accent2:#0550ae;
+  --text:#1f2328;--muted:#57606a;
+  --success:#1a7f37;--warn:#9a6700;--error:#cf222e;
+  --card-shadow:0 8px 28px rgba(140,149,159,.2);
+  --chip-bg:rgba(0,0,0,.04);
+  --dl-color:#ffffff;
+  --panel-noisy-text:#3c424a;
+  --panel-loading-bg:#ddf4ff;
+  --panel-loading-border:#54aeff;
+  --panel-warn-bg:#fff8c5;
+  --panel-warn-border:#d4a72c;
+  --panel-success-bg:#dafbe1;
+  --panel-success-border:#4ac26b;
+  --panel-error-bg:#ffebe9;
+  --panel-error-border:#ff8182;
+}
+
 body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);
-  min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px}
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;
+  transition:background .25s ease,color .25s ease}
 .card{width:100%;max-width:680px;background:var(--surface);border:1px solid var(--border);
-  border-radius:16px;padding:40px 36px;box-shadow:0 8px 32px rgba(0,0,0,.45)}
+  border-radius:16px;padding:40px 36px;box-shadow:var(--card-shadow);position:relative;
+  transition:background .25s ease,border-color .25s ease,box-shadow .25s ease}
+.theme-btn{position:absolute;top:20px;right:20px;width:38px;height:38px;border-radius:50%;
+  background:var(--surface2);border:1px solid var(--border);color:var(--text);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:17px;
+  transition:background .2s,border-color .2s,transform .15s;outline:none}
+.theme-btn:hover{border-color:var(--accent);transform:scale(1.08)}
 h1{font-size:22px;font-weight:700;text-align:center;margin-bottom:4px;letter-spacing:-.3px}
 .subtitle{text-align:center;color:var(--muted);font-size:13px;margin-bottom:32px}
 
@@ -28,8 +67,8 @@ h1{font-size:22px;font-weight:700;text-align:center;margin-bottom:4px;letter-spa
 .drop-zone{border:2px dashed var(--border);border-radius:var(--r);padding:28px 16px;
   text-align:center;cursor:pointer;transition:border-color .2s,background .2s;
   position:relative;user-select:none}
-.drop-zone:hover,.drop-zone.over{border-color:var(--accent2);background:rgba(88,166,255,.05)}
-.drop-zone.has-file{border-color:var(--success);background:rgba(63,185,80,.05)}
+.drop-zone:hover,.drop-zone.over{border-color:var(--accent2);background:rgba(88,166,255,.08)}
+.drop-zone.has-file{border-color:var(--success);background:rgba(63,185,80,.08)}
 .drop-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
 .drop-icon{font-size:32px;margin-bottom:10px;display:block}
 .drop-label{font-size:13px;font-weight:600;margin-bottom:4px}
@@ -66,23 +105,23 @@ h1{font-size:22px;font-weight:700;text-align:center;margin-bottom:4px;letter-spa
   display:none;animation:fadeIn .22s ease}
 @keyframes fadeIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
 .panel.show{display:block}
-.panel-loading{background:rgba(47,129,247,.07);border:1px solid rgba(47,129,247,.25);
+.panel-loading{background:var(--panel-loading-bg);border:1px solid var(--panel-loading-border);
   color:var(--accent2);display:flex;align-items:center;gap:10px}
 .spinner{width:18px;height:18px;flex-shrink:0;border:2px solid rgba(88,166,255,.25);
   border-top-color:var(--accent2);border-radius:50%;animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-.panel-warn{background:rgba(210,153,34,.07);border:1px solid rgba(210,153,34,.3);color:#e3b341}
-.panel-success{background:rgba(63,185,80,.07);border:1px solid rgba(63,185,80,.3);color:var(--success)}
-.panel-noisy{background:rgba(248,81,73,.07);border:1px solid rgba(248,81,73,.3);color:var(--error)}
+.panel-warn{background:var(--panel-warn-bg);border:1px solid var(--panel-warn-border);color:var(--warn)}
+.panel-success{background:var(--panel-success-bg);border:1px solid var(--panel-success-border);color:var(--success)}
+.panel-noisy{background:var(--panel-error-bg);border:1px solid var(--panel-error-border);color:var(--error)}
 .panel-noisy strong{display:block;font-size:14px;margin-bottom:6px}
-.panel-noisy p{color:#c9d1d9;font-size:13px}
-.panel-error{background:rgba(248,81,73,.07);border:1px solid rgba(248,81,73,.3);color:var(--error)}
+.panel-noisy p{color:var(--panel-noisy-text);font-size:13px}
+.panel-error{background:var(--panel-error-bg);border:1px solid var(--panel-error-border);color:var(--error)}
 .meta-row{margin-top:10px;display:flex;gap:10px;flex-wrap:wrap}
-.chip{font-size:12px;color:var(--muted);background:rgba(255,255,255,.04);
+.chip{font-size:12px;color:var(--muted);background:var(--chip-bg);
   padding:3px 10px;border-radius:20px;border:1px solid var(--border)}
 .chip span{color:var(--text);font-weight:500}
 .dl-btn{display:inline-flex;align-items:center;gap:8px;margin-top:13px;
-  padding:10px 22px;background:var(--success);color:#0d1117;border-radius:8px;
+  padding:10px 22px;background:var(--success);color:var(--dl-color);border-radius:8px;
   font-weight:700;font-size:13px;text-decoration:none;transition:opacity .2s}
 .dl-btn:hover{opacity:.85}
 footer{margin-top:18px;font-size:12px;color:var(--muted);text-align:center}
@@ -90,6 +129,9 @@ footer{margin-top:18px;font-size:12px;color:var(--muted);text-align:center}
 </head>
 <body>
 <div class="card">
+  <button id="themeToggle" class="theme-btn" title="Chuyển chế độ Sáng / Tối" aria-label="Toggle Theme">
+    <span id="themeIcon">☀️</span>
+  </button>
   <h1>🎙 Audio Sync Tool</h1>
   <p class="subtitle">Upload 1 video + 1 audio — nhận về file audio đã đồng bộ</p>
 
@@ -167,6 +209,26 @@ footer{margin-top:18px;font-size:12px;color:var(--muted);text-align:center}
 </footer>
 
 <script>
+// Chế độ Sáng / Tối (Theme Toggle)
+const themeToggle = document.getElementById('themeToggle');
+const themeIcon   = document.getElementById('themeIcon');
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('sync_theme', theme);
+  themeIcon.textContent = theme === 'light' ? '🌙' : '☀️';
+  themeToggle.setAttribute('title', theme === 'light' ? 'Chuyển sang chế độ Tối' : 'Chuyển sang chế độ Sáng');
+}
+
+const savedTheme = localStorage.getItem('sync_theme') || 
+  (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+applyTheme(savedTheme);
+
+themeToggle.addEventListener('click', () => {
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  applyTheme(current === 'light' ? 'dark' : 'light');
+});
+
 // Cấu hình URL Backend:
 // 1. Mặc định nếu chạy local hoặc cùng domain (Render): dùng path tương đối ''
 // 2. Nếu deploy Frontend trên Vercel: lấy URL Render từ localStorage hoặc hằng số bên dưới
