@@ -102,11 +102,12 @@ h1{font-size:22px;font-weight:700;text-align:center;margin-bottom:4px;letter-spa
 /* panels */
 #status{margin-top:22px;display:flex;flex-direction:column;gap:11px}
 .panel{border-radius:var(--r);padding:15px 18px;font-size:13px;line-height:1.6;
-  display:none;animation:fadeIn .22s ease}
+  display:none !important;animation:fadeIn .22s ease}
 @keyframes fadeIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
-.panel.show{display:block}
+.panel.show{display:block !important}
 .panel-loading{background:var(--panel-loading-bg);border:1px solid var(--panel-loading-border);
-  color:var(--accent2);display:flex;align-items:center;gap:10px}
+  color:var(--accent2);align-items:center;gap:10px}
+.panel-loading.show{display:flex !important}
 .spinner{width:18px;height:18px;flex-shrink:0;border:2px solid rgba(88,166,255,.25);
   border-top-color:var(--accent2);border-radius:50%;animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -350,9 +351,16 @@ setupDrop(dropAudio, setAudio);
 
 function hideAll() {
   ['panelLoading','panelSilence','panelLowConf','panelSuccess','panelNoisy','panelError']
-    .forEach(id => document.getElementById(id).classList.remove('show'));
+    .forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.remove('show');
+    });
 }
-function show(id) { document.getElementById(id).classList.add('show'); }
+hideAll();
+function show(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.add('show');
+}
 
 syncBtn.addEventListener('click', async () => {
   if(!videoFile || !audioFile) return;
